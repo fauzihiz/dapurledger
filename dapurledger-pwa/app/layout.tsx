@@ -3,12 +3,20 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "DapurLedger",
   description: "Smart ledger for food production (UMKM)",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/icons/icon-192x192.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -25,6 +33,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,9 +42,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
-      <body className={`${inter.className} antialiased bg-gray-50 text-gray-900 selection:bg-sky-100`}>
-        <main className="min-h-screen pb-20">
+    <html lang="id" className={inter.variable}>
+      <body className="antialiased">
+        <main className="min-h-[100dvh] pb-[4.5rem]">
           {children}
         </main>
         <Navbar />
