@@ -3,7 +3,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import Header from '@/components/Header';
-import { Plus, AlertTriangle, Package } from 'lucide-react';
+import { Plus, AlertTriangle, Package, Pencil } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InventoryPage() {
@@ -31,7 +31,7 @@ export default function InventoryPage() {
                     </div>
                 ) : (
                     ingredients.map((ing) => {
-                        const isLow = ing.currentStock <= ing.minStock;
+                        const isLow = (ing.minStock ?? 0) > 0 && ing.currentStock <= ing.minStock;
                         return (
                             <div key={ing.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center active:bg-slate-50 transition-colors">
                                 <div className="min-w-0 flex-1">
@@ -48,12 +48,20 @@ export default function InventoryPage() {
                                         {ing.currentStock.toLocaleString()} {ing.unit}
                                     </p>
                                 </div>
-                                <Link
-                                    href={`/inventory/purchase?id=${ing.id}`}
-                                    className="shrink-0 bg-sky-50 text-sky-600 px-4 py-2.5 rounded-xl text-[13px] font-bold active:bg-sky-100 transition-colors ml-3"
-                                >
-                                    Beli
-                                </Link>
+                                <div className="flex items-center gap-2 ml-3">
+                                    <Link
+                                        href={`/inventory/${ing.id}/edit`}
+                                        className="p-2.5 rounded-xl bg-slate-50 text-slate-400 active:bg-slate-100 transition-colors"
+                                    >
+                                        <Pencil className="w-4 h-4" />
+                                    </Link>
+                                    <Link
+                                        href={`/inventory/purchase?id=${ing.id}`}
+                                        className="shrink-0 bg-sky-50 text-sky-600 px-4 py-2.5 rounded-xl text-[13px] font-bold active:bg-sky-100 transition-colors"
+                                    >
+                                        Beli
+                                    </Link>
+                                </div>
                             </div>
                         );
                     })

@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const sales = useLiveQuery(() => db.sales.toArray());
   const cashflow = useLiveQuery(() => db.cashflow.toArray());
 
-  const lowStockItems = ingredients?.filter(ing => ing.currentStock <= ing.minStock) || [];
+  const lowStockItems = ingredients?.filter(ing => (ing.minStock ?? 0) > 0 && ing.currentStock <= ing.minStock) || [];
 
   const totalCash = cashflow?.reduce((acc, item) =>
     item.type === 'in' ? acc + item.amount : acc - item.amount, 0) || 0;

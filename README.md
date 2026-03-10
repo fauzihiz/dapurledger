@@ -40,9 +40,8 @@ Semua data tersimpan **100% lokal** di browser (IndexedDB), sehingga aman, cepat
 ## 🚀 Cara Menjalankan
 
 ```bash
-# Clone repo
-git clone https://github.com/fauzihiz/dapurledger.git
-cd dapurledger/dapurledger-pwa
+# Pastikan berada di folder project
+cd dapurledger-pwa
 
 # Install dependencies
 npm install
@@ -88,7 +87,7 @@ npm start
 
 ## 📄 Lisensi
 
-MIT License — lihat file [LICENSE](../LICENSE) untuk detail.
+MIT License
 
 ---
 
