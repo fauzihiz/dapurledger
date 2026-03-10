@@ -20,8 +20,8 @@ function PurchaseForm() {
     const [selectedId, setSelectedId] = useState<number | null>(ingredientId || null);
     const [formData, setFormData] = useState({
         unitSize: '',
-        quantityPurchased: 1,
-        totalPrice: 0,
+        quantityPurchased: '1',
+        totalPrice: '',
     });
 
     const activeIngredient = selectedId
@@ -33,8 +33,10 @@ function PurchaseForm() {
         if (!activeIngredient) return;
 
         const unitSizeNum = Number(formData.unitSize);
-        const totalWeight = unitSizeNum * formData.quantityPurchased;
-        const pricePerBaseUnit = formData.totalPrice / totalWeight;
+        const quantityNum = formData.quantityPurchased === '' ? 0 : Number(formData.quantityPurchased);
+        const totalPriceNum = Number(formData.totalPrice);
+        const totalWeight = unitSizeNum * quantityNum;
+        const pricePerBaseUnit = totalWeight > 0 ? totalPriceNum / totalWeight : 0;
 
         await db.transaction('rw', [db.ingredients, db.purchases, db.cashflow], async () => {
             await db.purchases.add({
@@ -42,10 +44,10 @@ function PurchaseForm() {
                 purchaseDate: new Date(),
                 brand: activeIngredient.brand,
                 unitSize: formData.unitSize,
-                quantityPurchased: formData.quantityPurchased,
+                quantityPurchased: quantityNum,
                 totalWeight,
-                unitPrice: formData.totalPrice / formData.quantityPurchased,
-                totalPrice: formData.totalPrice,
+                unitPrice: quantityNum > 0 ? totalPriceNum / quantityNum : 0,
+                totalPrice: totalPriceNum,
                 pricePerBaseUnit,
             });
 
@@ -62,9 +64,9 @@ function PurchaseForm() {
             await db.cashflow.add({
                 date: new Date(),
                 type: 'out',
-                amount: formData.totalPrice,
+                amount: totalPriceNum,
                 category: 'purchase',
-                note: `Beli ${activeIngredient.name} (${formData.quantityPurchased}x ${formData.unitSize}${activeIngredient.unit})`,
+                note: `Beli ${activeIngredient.name} (${quantityNum}x ${formData.unitSize}${activeIngredient.unit})`,
             });
         });
 
@@ -126,7 +128,7 @@ function PurchaseForm() {
                             type="number"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
                             value={formData.quantityPurchased}
-                            onChange={(e) => setFormData({ ...formData, quantityPurchased: Number(e.target.value) })}
+                            onChange={(e) => setFormData({ ...formData, quantityPurchased: e.target.value })}
                         />
                     </div>
 
@@ -137,8 +139,8 @@ function PurchaseForm() {
                             type="number"
                             placeholder="0"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 font-bold text-sky-600 placeholder:text-slate-300"
-                            value={formData.totalPrice || ''}
-                            onChange={(e) => setFormData({ ...formData, totalPrice: Number(e.target.value) })}
+                            value={formData.totalPrice}
+                            onChange={(e) => setFormData({ ...formData, totalPrice: e.target.value })}
                         />
                     </div>
                 </div>

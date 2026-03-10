@@ -11,14 +11,19 @@ export default function NewProductPage() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        distributorPrice: 0,
-        resellerPrice: 0,
-        customerPrice: 0,
+        distributorPrice: '',
+        resellerPrice: '',
+        customerPrice: '',
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        await db.products.add(formData);
+        await db.products.add({
+            ...formData,
+            distributorPrice: Number(formData.distributorPrice),
+            resellerPrice: Number(formData.resellerPrice),
+            customerPrice: Number(formData.customerPrice),
+        });
         router.push('/products');
     };
 
@@ -54,8 +59,8 @@ export default function NewProductPage() {
                                 <label className="block text-[12px] font-medium text-slate-500 mb-1 ml-0.5">{label}</label>
                                 <input required type="number"
                                     className={`${inputClass} font-bold text-sky-600`}
-                                    value={(formData as any)[key] || ''}
-                                    onChange={(e) => setFormData({ ...formData, [key]: Number(e.target.value) })} />
+                                    value={(formData as any)[key]}
+                                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })} />
                             </div>
                         ))}
                     </div>

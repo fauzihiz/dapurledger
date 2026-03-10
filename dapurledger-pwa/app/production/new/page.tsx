@@ -14,29 +14,32 @@ export default function NewProductionPage() {
 
     const [step, setStep] = useState(1);
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-    const [totalProduced, setTotalProduced] = useState<number>(0);
-    const [weights, setWeights] = useState<Record<number, { before: number; after: number }>>({});
+    const [totalProduced, setTotalProduced] = useState<string>('0');
+    const [weights, setWeights] = useState<Record<number, { before: string; after: string }>>({});
 
     const product = products?.find(p => p.id === selectedProductId);
     const recipe = useLiveQuery(() =>
         selectedProductId ? db.recipes.where('productId').equals(selectedProductId).toArray() : []
         , [selectedProductId]);
 
-    const handleWeightChange = (ingId: number, type: 'before' | 'after', value: number) => {
+    const handleWeightChange = (ingId: number, type: 'before' | 'after', value: string) => {
         setWeights(prev => ({ ...prev, [ingId]: { ...prev[ingId], [type]: value } }));
     };
 
     const calculateHPP = () => {
         let totalCost = 0;
+        const totalProducedNum = totalProduced === '' ? 0 : Number(totalProduced);
         const usageDetails = recipe?.map(item => {
-            const w = weights[item.ingredientId] || { before: 0, after: 0 };
-            const used = Math.max(0, w.before - w.after);
+            const w = weights[item.ingredientId] || { before: '0', after: '0' };
+            const beforeNum = w.before === '' ? 0 : Number(w.before);
+            const afterNum = w.after === '' ? 0 : Number(w.after);
+            const used = Math.max(0, beforeNum - afterNum);
             const ing = ingredients?.find(i => i.id === item.ingredientId);
             const cost = used * (ing?.averagePricePerUnit || 0);
             totalCost += cost;
-            return { ingredientId: item.ingredientId, weightBefore: w.before, weightAfter: w.after, qtyUsed: used, cost };
+            return { ingredientId: item.ingredientId, weightBefore: beforeNum, weightAfter: afterNum, qtyUsed: used, cost };
         }) || [];
-        return { totalCost, usageDetails, hpp: totalProduced > 0 ? totalCost / totalProduced : 0 };
+        return { totalCost, usageDetails, hpp: totalProducedNum > 0 ? totalCost / totalProducedNum : 0 };
     };
 
     const handleFinish = async () => {
@@ -47,7 +50,7 @@ export default function NewProductionPage() {
             await db.batches.add({
                 batchDate: new Date(),
                 productId: selectedProductId,
-                totalPiecesProduced: totalProduced,
+                totalPiecesProduced: totalProduced === '' ? 0 : Number(totalProduced),
                 totalIngredientCost: totalCost,
                 hpp,
                 ingredients: usageDetails,
@@ -122,15 +125,15 @@ export default function NewProductionPage() {
                                             <label className="text-[10px] font-semibold text-slate-400 uppercase ml-0.5">Sebelum</label>
                                             <input type="number" placeholder="0"
                                                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-[14px] font-bold"
-                                                value={weights[item.ingredientId]?.before || ''}
-                                                onChange={(e) => handleWeightChange(item.ingredientId, 'before', Number(e.target.value))} />
+                                                value={weights[item.ingredientId]?.before ?? ''}
+                                                onChange={(e) => handleWeightChange(item.ingredientId, 'before', e.target.value)} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-semibold text-slate-400 uppercase ml-0.5">Sesudah</label>
                                             <input type="number" placeholder="0"
                                                 className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-[14px] font-bold"
-                                                value={weights[item.ingredientId]?.after || ''}
-                                                onChange={(e) => handleWeightChange(item.ingredientId, 'after', Number(e.target.value))} />
+                                                value={weights[item.ingredientId]?.after ?? ''}
+                                                onChange={(e) => handleWeightChange(item.ingredientId, 'after', e.target.value)} />
                                         </div>
                                     </div>
                                 </div>
@@ -154,7 +157,7 @@ export default function NewProductionPage() {
                             <div className="mt-4">
                                 <input type="number" placeholder="0"
                                     className="w-28 text-center text-2xl font-black bg-white/60 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 text-emerald-900 py-2"
-                                    value={totalProduced || ''} onChange={(e) => setTotalProduced(Number(e.target.value))} />
+                                    value={totalProduced} onChange={(e) => setTotalProduced(e.target.value)} />
                                 <p className="text-[11px] font-bold text-emerald-600 uppercase mt-1">Pcs</p>
                             </div>
                         </div>
@@ -163,8 +166,10 @@ export default function NewProductionPage() {
                             <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Rincian Biaya</h3>
                             {recipe?.map(item => {
                                 const ing = ingredients?.find(i => i.id === item.ingredientId);
-                                const w = weights[item.ingredientId] || { before: 0, after: 0 };
-                                const used = Math.max(0, w.before - w.after);
+                                const w = weights[item.ingredientId] || { before: '0', after: '0' };
+                                const beforeNum = w.before === '' ? 0 : Number(w.before);
+                                const afterNum = w.after === '' ? 0 : Number(w.after);
+                                const used = Math.max(0, beforeNum - afterNum);
                                 const cost = used * (ing?.averagePricePerUnit || 0);
                                 return (
                                     <div key={item.id} className="flex justify-between items-center text-[13px]">

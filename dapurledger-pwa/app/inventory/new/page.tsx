@@ -19,7 +19,7 @@ export default function NewIngredientPage() {
     const [purchaseData, setPurchaseData] = useState({
         hasPurchase: false,
         unitSize: '',
-        quantity: 1,
+        quantity: '1', // Changed to string
         totalPrice: '',
     });
 
@@ -42,10 +42,10 @@ export default function NewIngredientPage() {
             // 2. Optional: Add Initial Purchase
             if (purchaseData.hasPurchase && purchaseData.unitSize && purchaseData.totalPrice) {
                 const unitSizeNum = Number(purchaseData.unitSize);
-                const quantityNum = Number(purchaseData.quantity);
+                const quantityNum = purchaseData.quantity === '' ? 0 : Number(purchaseData.quantity);
                 const totalPriceNum = Number(purchaseData.totalPrice);
                 const totalWeight = unitSizeNum * quantityNum;
-                const pricePerBaseUnit = totalPriceNum / totalWeight;
+                const pricePerBaseUnit = totalWeight > 0 ? totalPriceNum / totalWeight : 0;
 
                 await db.purchases.add({
                     ingredientId: ingredientId as number,
@@ -176,7 +176,7 @@ export default function NewIngredientPage() {
                                             type="number"
                                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
                                             value={purchaseData.quantity}
-                                            onChange={(e) => setPurchaseData({ ...purchaseData, quantity: Number(e.target.value) })}
+                                            onChange={(e) => setPurchaseData({ ...purchaseData, quantity: e.target.value })}
                                         />
                                     </div>
                                     <div>

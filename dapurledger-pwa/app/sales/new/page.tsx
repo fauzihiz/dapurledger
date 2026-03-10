@@ -13,7 +13,7 @@ export default function NewSalePage() {
     const batches = useLiveQuery(() => db.batches.toArray());
 
     const [productId, setProductId] = useState<number | null>(null);
-    const [quantity, setQuantity] = useState<number>(1);
+    const [quantity, setQuantity] = useState<string>('1');
     const [salesType, setSalesType] = useState<'customer' | 'reseller' | 'distributor'>('customer');
 
     const selectedProduct = products?.find(p => p.id === productId);
@@ -27,8 +27,9 @@ export default function NewSalePage() {
         return selectedProduct.distributorPrice;
     };
 
-    const revenue = getPrice() * quantity;
-    const estProfit = (getPrice() - estHpp) * quantity;
+    const quantityNum = quantity === '' ? 0 : Number(quantity);
+    const revenue = getPrice() * quantityNum;
+    const estProfit = (getPrice() - estHpp) * quantityNum;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,14 +37,14 @@ export default function NewSalePage() {
 
         await db.transaction('rw', [db.sales, db.cashflow], async () => {
             await db.sales.add({
-                date: new Date(), productId, quantity,
+                date: new Date(), productId, quantity: quantityNum,
                 priceEach: getPrice(), totalRevenue: revenue,
                 type: salesType, estimatedProfit: estProfit,
             });
             await db.cashflow.add({
                 date: new Date(), type: 'in', amount: revenue,
                 category: 'sale',
-                note: `Jual ${quantity} ${selectedProduct.name} (${salesType})`,
+                note: `Jual ${quantityNum} ${selectedProduct.name} (${salesType})`,
             });
         });
         router.push('/sales');
@@ -69,7 +70,7 @@ export default function NewSalePage() {
                         <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah (Pcs)</label>
                         <input required type="number"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 font-bold"
-                            value={quantity || ''} onChange={(e) => setQuantity(Number(e.target.value))} />
+                            value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                     </div>
 
                     <div>
@@ -82,8 +83,8 @@ export default function NewSalePage() {
                             ].map((t) => (
                                 <button key={t.id} type="button" onClick={() => setSalesType(t.id as any)}
                                     className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all border ${salesType === t.id
-                                            ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/25'
-                                            : 'bg-white border-slate-100 text-slate-400'
+                                        ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/25'
+                                        : 'bg-white border-slate-100 text-slate-400'
                                         }`}>
                                     <t.icon className="w-4 h-4" />
                                     <span className="text-[10px] font-bold uppercase">{t.label}</span>

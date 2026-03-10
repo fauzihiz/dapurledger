@@ -12,13 +12,14 @@ export default function InternalConsumptionPage() {
     const products = useLiveQuery(() => db.products.toArray());
 
     const [productId, setProductId] = useState<number | null>(null);
-    const [quantity, setQuantity] = useState<number>(1);
+    const [quantity, setQuantity] = useState<string>('1');
     const [note, setNote] = useState<string>('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!productId) return;
-        await db.consumption.add({ date: new Date(), productId, quantity, note });
+        const qtyNum = quantity === '' ? 0 : Number(quantity);
+        await db.consumption.add({ date: new Date(), productId, quantity: qtyNum, note });
         router.push('/');
     };
 
@@ -52,7 +53,7 @@ export default function InternalConsumptionPage() {
                         <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah (Pcs)</label>
                         <input required type="number"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-800 font-bold"
-                            value={quantity || ''} onChange={(e) => setQuantity(Number(e.target.value))} />
+                            value={quantity} onChange={(e) => setQuantity(e.target.value)} />
                     </div>
 
                     <div>

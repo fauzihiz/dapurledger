@@ -9,7 +9,7 @@ import { Save, Receipt } from 'lucide-react';
 export default function NewExpensePage() {
     const router = useRouter();
     const [formData, setFormData] = useState({
-        amount: 0,
+        amount: '',
         note: '',
     });
 
@@ -18,7 +18,7 @@ export default function NewExpensePage() {
         await db.cashflow.add({
             date: new Date(),
             type: 'out',
-            amount: formData.amount,
+            amount: Number(formData.amount),
             category: 'expense',
             note: formData.note || 'Biaya operasional',
         });
@@ -45,7 +45,7 @@ export default function NewExpensePage() {
                         <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah (Rp)</label>
                         <input required type="number" placeholder="0"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-amber-600 text-lg placeholder:text-slate-300"
-                            value={formData.amount || ''} onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })} />
+                            value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} />
                     </div>
 
                     <div>
