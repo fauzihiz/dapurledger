@@ -174,8 +174,10 @@ export default function NewIngredientPage() {
                                         <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah Beli</label>
                                         <input
                                             type="number"
+                                            min="1"
                                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
                                             value={purchaseData.quantity}
+                                            onFocus={(e) => e.target.select()}
                                             onChange={(e) => setPurchaseData({ ...purchaseData, quantity: e.target.value })}
                                         />
                                     </div>

@@ -126,8 +126,10 @@ function PurchaseForm() {
                         <input
                             required
                             type="number"
+                            min="1"
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800"
                             value={formData.quantityPurchased}
+                            onFocus={(e) => e.target.select()}
                             onChange={(e) => setFormData({ ...formData, quantityPurchased: e.target.value })}
                         />
                     </div>

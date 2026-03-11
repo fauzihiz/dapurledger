@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, ClipboardList, Zap, Wallet, type LucideIcon } from 'lucide-react';
+import { Home, Package, ClipboardList, History, type LucideIcon } from 'lucide-react';
 
 interface NavItem {
     name: string;
@@ -12,10 +12,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Produksi', href: '/production', icon: ClipboardList },
-    { name: 'Simulasi', href: '/simulation', icon: Zap },
     { name: 'Stok', href: '/inventory', icon: Package },
-    { name: 'Kas', href: '/stats', icon: Wallet },
+    { name: 'Produksi', href: '/production/new', icon: ClipboardList },
+    { name: 'Batch', href: '/production', icon: History },
 ];
 
 export default function Navbar() {
@@ -33,8 +32,8 @@ export default function Navbar() {
                             key={item.name}
                             href={item.href}
                             className={`flex flex-col items-center justify-center flex-1 h-full relative transition-colors duration-200 ${isActive
-                                    ? 'text-sky-500'
-                                    : 'text-slate-400 active:text-slate-600'
+                                ? 'text-sky-500'
+                                : 'text-slate-400 active:text-slate-600'
                                 }`}
                         >
                             {isActive && (
