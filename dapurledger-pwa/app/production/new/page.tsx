@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import Header from '@/components/Header';
@@ -68,6 +69,7 @@ export default function NewProductionPage() {
         const id = await db.products.add({
             name: newProductName,
             description: '',
+            currentStock: 0,
             distributorPrice: 0,
             resellerPrice: 0,
             customerPrice: 0
@@ -126,7 +128,7 @@ export default function NewProductionPage() {
         if (!selectedProductId) return;
         const { totalCost, usageDetails, hpp, totalProducedNum } = stats;
 
-        await db.transaction('rw', [db.batches, db.ingredients, db.recipes], async () => {
+        await db.transaction('rw', [db.batches, db.ingredients, db.recipes, db.products], async () => {
             // 1. Add Batch
             await db.batches.add({
                 batchDate: new Date(),
@@ -162,6 +164,14 @@ export default function NewProductionPage() {
                     estimatedQty: u.qtyUsed // Use this batch's usage as the new baseline
                 });
             }
+
+            // 4. Update Finished Goods Stock
+            const currentProd = await db.products.get(selectedProductId);
+            if (currentProd) {
+                await db.products.update(selectedProductId, {
+                    currentStock: (currentProd.currentStock || 0) + totalProducedNum
+                });
+            }
         });
         router.push('/production');
     };
@@ -171,6 +181,11 @@ export default function NewProductionPage() {
             <Header title="Produksi Baru" showBack />
 
             <div className="p-4 max-w-md mx-auto">
+                <div className="flex justify-end mb-4 px-2">
+                    <Link href="/production/products" className="text-[11px] font-black text-sky-500 uppercase tracking-widest flex items-center gap-1.5 hover:text-sky-600 transition-colors">
+                        LIHAT DAFTAR PRODUK <ChevronRight className="w-3 h-3" />
+                    </Link>
+                </div>
                 <div className="flex justify-between items-center mb-8 px-2 relative">
                     {[1, 2, 3, 4].map((s) => (
                         <div key={s} className="flex flex-col items-center relative z-10">

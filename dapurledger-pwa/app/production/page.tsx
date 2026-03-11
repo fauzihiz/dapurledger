@@ -3,7 +3,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import Header from '@/components/Header';
-import { Plus, History, Calendar, CheckCircle2, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Plus, History, Calendar, CheckCircle2, TrendingUp, ArrowUpRight, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -11,6 +11,11 @@ import { id } from 'date-fns/locale';
 export default function ProductionHistoryPage() {
     const batches = useLiveQuery(() => db.batches.orderBy('batchDate').reverse().toArray());
     const products = useLiveQuery(() => db.products.toArray());
+
+    const handleDeleteBatch = async (id: number) => {
+        if (!confirm('Hapus riwayat batch ini? (Catatan: Stok bahan tidak akan dikembalikan otomatis)')) return;
+        await db.batches.delete(id);
+    };
 
     return (
         <div className="animate-slide-up pb-20">
@@ -48,9 +53,17 @@ export default function ProductionHistoryPage() {
                                         </div>
                                         <h3 className="font-black text-lg text-slate-800 truncate leading-tight">{product?.name || 'Produk Dihapus'}</h3>
                                     </div>
-                                    <div className="bg-emerald-50 px-3 py-1.5 rounded-xl text-right shrink-0 ml-3">
-                                        <p className="text-lg font-black text-emerald-600 leading-none">{b.totalPiecesProduced}</p>
-                                        <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter mt-1">Pcs</p>
+                                    <div className="flex gap-2 shrink-0 ml-3">
+                                        <div className="bg-emerald-50 px-3 py-1.5 rounded-xl text-right">
+                                            <p className="text-lg font-black text-emerald-600 leading-none">{b.totalPiecesProduced}</p>
+                                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-tighter mt-1">Pcs</p>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteBatch(b.id!)}
+                                            className="p-2 text-slate-300 hover:text-red-500 active:scale-90 transition-all"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
                                     </div>
                                 </div>
 

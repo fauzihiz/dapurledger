@@ -27,6 +27,7 @@ export interface Product {
   id?: number;
   name: string;
   description: string;
+  currentStock: number; // For finished goods
   distributorPrice: number;
   resellerPrice: number;
   customerPrice: number;

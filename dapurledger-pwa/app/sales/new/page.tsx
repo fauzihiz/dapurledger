@@ -5,117 +5,222 @@ import { useRouter } from 'next/navigation';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import Header from '@/components/Header';
-import { Save, User, Users, Store, TrendingUp } from 'lucide-react';
+import {
+    ShoppingBag,
+    ArrowRight,
+    ChevronRight,
+    ChevronLeft,
+    CheckCircle2,
+    Store,
+    Users,
+    User,
+    Package
+} from 'lucide-react';
 
 export default function NewSalePage() {
     const router = useRouter();
     const products = useLiveQuery(() => db.products.toArray());
-    const batches = useLiveQuery(() => db.batches.toArray());
 
-    const [productId, setProductId] = useState<number | null>(null);
-    const [quantity, setQuantity] = useState<string>('1');
-    const [salesType, setSalesType] = useState<'customer' | 'reseller' | 'distributor'>('customer');
+    const [step, setStep] = useState(1);
+    const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+    const [qty, setQty] = useState<string>('1');
+    const [price, setPrice] = useState<string>('');
+    const [tier, setTier] = useState<'distributor' | 'reseller' | 'customer'>('customer');
 
-    const selectedProduct = products?.find(p => p.id === productId);
-    const latestBatch = batches?.filter(b => b.productId === productId).sort((a, b) => b.batchDate.getTime() - a.batchDate.getTime())[0];
-    const estHpp = latestBatch?.hpp || 0;
+    const product = products?.find(p => p.id === selectedProductId);
 
-    const getPrice = () => {
-        if (!selectedProduct) return 0;
-        if (salesType === 'customer') return selectedProduct.customerPrice;
-        if (salesType === 'reseller') return selectedProduct.resellerPrice;
-        return selectedProduct.distributorPrice;
+    // Get latest batch to find HPP
+    const latestBatch = useLiveQuery(async () => {
+        if (!selectedProductId) return null;
+        const batches = await db.batches
+            .where('productId')
+            .equals(selectedProductId)
+            .toArray();
+        return batches.sort((a, b) => b.batchDate.getTime() - a.batchDate.getTime())[0];
+    }, [selectedProductId]);
+
+    const lastHpp = latestBatch?.hpp || 0;
+
+    const handleTierChange = (newTier: 'distributor' | 'reseller' | 'customer') => {
+        setTier(newTier);
+        const margin = newTier === 'distributor' ? 1.3 : newTier === 'reseller' ? 1.6 : 2.0;
+        setPrice(Math.round(lastHpp * margin).toString());
     };
 
-    const quantityNum = quantity === '' ? 0 : Number(quantity);
-    const revenue = getPrice() * quantityNum;
-    const estProfit = (getPrice() - estHpp) * quantityNum;
+    const handleSave = async () => {
+        if (!selectedProductId || !product) return;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!productId || !selectedProduct) return;
+        const qtyNum = Number(qty);
+        const priceNum = Number(price);
+        const revenue = qtyNum * priceNum;
+        const profit = revenue - (qtyNum * lastHpp);
 
-        await db.transaction('rw', [db.sales, db.cashflow], async () => {
+        await db.transaction('rw', [db.products, db.sales, db.cashflow], async () => {
+            // 1. Add Sale
             await db.sales.add({
-                date: new Date(), productId, quantity: quantityNum,
-                priceEach: getPrice(), totalRevenue: revenue,
-                type: salesType, estimatedProfit: estProfit,
+                date: new Date(),
+                productId: selectedProductId,
+                quantity: qtyNum,
+                priceEach: priceNum,
+                totalRevenue: revenue,
+                type: tier,
+                estimatedProfit: profit
             });
+
+            // 2. Update Product Stock
+            await db.products.update(selectedProductId, {
+                currentStock: Math.max(0, (product.currentStock || 0) - qtyNum)
+            });
+
+            // 3. Add to Cashflow
             await db.cashflow.add({
-                date: new Date(), type: 'in', amount: revenue,
+                date: new Date(),
+                type: 'in',
+                amount: revenue,
                 category: 'sale',
-                note: `Jual ${quantityNum} ${selectedProduct.name} (${salesType})`,
+                note: `Jual ${product.name} (${qtyNum} pcs) - ${tier}`
             });
         });
-        router.push('/sales');
+
+        router.push('/');
     };
 
     return (
-        <div className="animate-slide-up">
+        <div className="animate-slide-up pb-20">
             <Header title="Catat Penjualan" showBack />
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-5 max-w-md mx-auto">
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Produk</label>
-                        <select required
-                            className="w-full px-4 py-3 rounded-xl bg-white border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-[14px] font-medium text-slate-800"
-                            value={productId || ''} onChange={(e) => setProductId(Number(e.target.value))}>
-                            <option value="">Pilih...</option>
-                            {products?.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah (Pcs)</label>
-                        <input required type="number"
-                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-800 font-bold"
-                            value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-                    </div>
-
-                    <div>
-                        <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Tipe Penjualan</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[
-                                { id: 'distributor', label: 'Distro', icon: Store },
-                                { id: 'reseller', label: 'Resell', icon: Users },
-                                { id: 'customer', label: 'Eceran', icon: User },
-                            ].map((t) => (
-                                <button key={t.id} type="button" onClick={() => setSalesType(t.id as any)}
-                                    className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all border ${salesType === t.id
-                                        ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/25'
-                                        : 'bg-white border-slate-100 text-slate-400'
-                                        }`}>
-                                    <t.icon className="w-4 h-4" />
-                                    <span className="text-[10px] font-bold uppercase">{t.label}</span>
-                                </button>
-                            ))}
+            <div className="p-4 max-w-md mx-auto">
+                {/* Progress */}
+                <div className="flex justify-between items-center mb-8 px-4 relative">
+                    {[1, 2].map((s) => (
+                        <div key={s} className="flex flex-col items-center relative z-10 w-1/2">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-black transition-all ${step >= s ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'bg-slate-100 text-slate-400'}`}>
+                                {s}
+                            </div>
+                            <p className={`text-[10px] font-black uppercase tracking-widest mt-2 ${step >= s ? 'text-sky-600' : 'text-slate-400'}`}>
+                                {s === 1 ? 'Pilih Produk' : 'Detail Jual'}
+                            </p>
                         </div>
-                    </div>
+                    ))}
+                    <div className={`absolute left-[25%] right-[25%] top-4 h-[2px] -z-0 ${step > 1 ? 'bg-sky-500' : 'bg-slate-100'}`} />
                 </div>
 
-                {selectedProduct && (
-                    <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 space-y-3">
-                        <div className="flex justify-between items-end">
-                            <div>
-                                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Total Pendapatan</p>
-                                <p className="text-2xl font-black text-emerald-900">Rp{revenue.toLocaleString('id-ID')}</p>
-                            </div>
-                            <p className="text-[13px] font-bold text-emerald-700">@Rp{getPrice().toLocaleString('id-ID')}</p>
-                        </div>
-                        <div className="pt-3 border-t border-emerald-100 flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-emerald-500" />
-                            <p className="text-[13px] font-bold text-emerald-700">Est. Laba: Rp{estProfit.toLocaleString('id-ID')}</p>
-                            <p className="text-[10px] text-emerald-500 ml-auto">HPP: Rp{Math.round(estHpp)}</p>
+                {/* Step 1: Select Product */}
+                {step === 1 && (
+                    <div className="space-y-4">
+                        <h2 className="text-[17px] font-black text-slate-800 px-1">Produk mana yang terjual?</h2>
+                        <div className="grid gap-3">
+                            {(products || []).length === 0 ? (
+                                <div className="bg-white p-10 rounded-3xl border border-dashed border-slate-200 text-center">
+                                    <p className="text-slate-400 text-sm font-medium">Belum ada produk.<br />Masak dulu di menu Produksi.</p>
+                                </div>
+                            ) : (
+                                products?.map(p => (
+                                    <button key={p.id}
+                                        onClick={() => {
+                                            setSelectedProductId(p.id!);
+                                            // Pre-calculate price for default tier (customer) if possible
+                                            setStep(2);
+                                        }}
+                                        className={`w-full p-4 rounded-2xl border text-left transition-all active:scale-[0.98] ${selectedProductId === p.id
+                                            ? 'bg-sky-50 border-sky-500 ring-1 ring-sky-500 shadow-md'
+                                            : 'bg-white border-slate-100 shadow-sm'}`}>
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="font-black text-[15px] text-slate-800">{p.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <Package className="w-3 h-3 text-slate-400" />
+                                                    <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Stok: {p.currentStock || 0} PCS</p>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className={`w-5 h-5 ${selectedProductId === p.id ? 'text-sky-500' : 'text-slate-300'}`} />
+                                        </div>
+                                    </button>
+                                ))
+                            )}
                         </div>
                     </div>
                 )}
 
-                <button type="submit" disabled={!productId}
-                    className="w-full bg-slate-800 text-white py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-[15px] active:scale-[0.98] transition-all disabled:opacity-50">
-                    <Save className="w-5 h-5" /> Simpan Transaksi
-                </button>
-            </form>
+                {/* Step 2: Detail Jual */}
+                {step === 2 && product && (
+                    <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                        <div className="bg-sky-50 p-5 rounded-3xl border border-sky-100">
+                            <p className="text-[10px] font-black text-sky-600 uppercase tracking-widest leading-none">Menjual Produk</p>
+                            <div className="flex justify-between items-end mt-2">
+                                <h3 className="text-xl font-black text-sky-900">{product.name}</h3>
+                                <p className="text-[11px] font-bold text-sky-700 bg-white/50 px-3 py-1 rounded-full border border-sky-100">Sisa Stok: {product.currentStock} pcs</p>
+                            </div>
+                        </div>
+
+                        {/* Customer Tier */}
+                        <div className="space-y-3">
+                            <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest px-1">Tipe Pembeli & Harga</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'distributor', icon: Store, label: 'Dist' },
+                                    { id: 'reseller', icon: Users, label: 'Resel' },
+                                    { id: 'customer', icon: User, label: 'Retail' },
+                                ].map((t) => {
+                                    const Icon = t.icon;
+                                    const active = tier === t.id;
+                                    return (
+                                        <button key={t.id} onClick={() => handleTierChange(t.id as any)}
+                                            className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${active
+                                                ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/20'
+                                                : 'bg-white border-slate-100 text-slate-400'}`}>
+                                            <Icon className={`w-5 h-5 ${active ? 'text-white' : 'text-slate-400'}`} />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">{t.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Jumlah Jual</label>
+                                <div className="relative">
+                                    <input type="number"
+                                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl text-[16px] font-black focus:ring-2 focus:ring-sky-500"
+                                        value={qty} onFocus={(e) => e.target.select()} onChange={(e) => setQty(e.target.value)} />
+                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400 uppercase">PCS</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Harga / PCS</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[14px] font-black text-slate-400">Rp</span>
+                                    <input type="number"
+                                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-[16px] font-black text-sky-600 focus:ring-2 focus:ring-sky-500"
+                                        value={price} onFocus={(e) => e.target.select()} onChange={(e) => setPrice(e.target.value)} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-5 bg-slate-800 rounded-[2rem] text-white overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/10 blur-3xl rounded-full" />
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Total Terima Uang</p>
+                                    <p className="text-2xl font-black">Rp{(Number(qty) * Number(price)).toLocaleString('id-ID')}</p>
+                                </div>
+                                <ShoppingBag className="w-10 h-10 text-sky-500/30" />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 pt-6">
+                            <button onClick={() => setStep(1)} className="p-4 bg-slate-100 rounded-2xl text-slate-600 active:scale-95 transition-transform">
+                                <ChevronLeft className="w-6 h-6" />
+                            </button>
+                            <button onClick={handleSave} disabled={!qty || !price || Number(qty) <= 0}
+                                className="flex-1 bg-sky-500 text-white rounded-2xl font-black text-[17px] flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 active:scale-95 transition-all">
+                                SIMPAN PENJUALAN <CheckCircle2 className="w-6 h-6 text-sky-200" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

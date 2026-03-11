@@ -3,7 +3,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '@/lib/db';
 import Header from '@/components/Header';
-import { Plus, AlertTriangle, Package, Pencil } from 'lucide-react';
+import { Plus, AlertTriangle, Package, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function InventoryPage() {
@@ -20,6 +20,15 @@ export default function InventoryPage() {
             };
         });
     });
+
+    const handleDelete = async (id: number) => {
+        if (!confirm('Hapus bahan ini? Riwayat pembelian dan resep yang menggunakan bahan ini akan terpengaruh.')) return;
+        await db.transaction('rw', [db.ingredients, db.purchases, db.recipes], async () => {
+            await db.purchases.where('ingredientId').equals(id).delete();
+            await db.recipes.where('ingredientId').equals(id).delete();
+            await db.ingredients.delete(id);
+        });
+    };
 
     return (
         <div className="animate-slide-up">
@@ -65,6 +74,12 @@ export default function InventoryPage() {
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </Link>
+                                        <button
+                                            onClick={() => handleDelete(ing.id!)}
+                                            className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 active:bg-slate-100 transition-colors"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                 </div>
 

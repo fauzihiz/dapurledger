@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Package, ClipboardList, History, type LucideIcon } from 'lucide-react';
+import { Home, Package, ClipboardList, History, ShoppingBag, type LucideIcon } from 'lucide-react';
 
 interface NavItem {
     name: string;
@@ -14,6 +14,7 @@ const navItems: NavItem[] = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Stok', href: '/inventory', icon: Package },
     { name: 'Produksi', href: '/production/new', icon: ClipboardList },
+    { name: 'Jual', href: '/sales/new', icon: ShoppingBag },
     { name: 'Batch', href: '/production', icon: History },
 ];
 
