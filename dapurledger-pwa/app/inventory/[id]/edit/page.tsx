@@ -16,6 +16,7 @@ export default function EditIngredientPage() {
         brand: '',
         unit: 'gram' as 'gram' | 'ml' | 'pcs',
         minStock: '' as string | number,
+        currentStock: '' as string | number,
     });
 
     useEffect(() => {
@@ -27,6 +28,7 @@ export default function EditIngredientPage() {
                         brand: ing.brand,
                         unit: ing.unit,
                         minStock: ing.minStock || '',
+                        currentStock: ing.currentStock ?? '',
                     });
                 }
             });
@@ -42,6 +44,7 @@ export default function EditIngredientPage() {
             brand: formData.brand,
             unit: formData.unit,
             minStock: minStockVal,
+            currentStock: formData.currentStock === '' ? 0 : Number(formData.currentStock),
         });
 
         router.push('/inventory');
@@ -122,6 +125,24 @@ export default function EditIngredientPage() {
                                 {formData.unit}
                             </span>
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-[13px] font-semibold text-slate-600 mb-1.5 ml-0.5">Jumlah Stok Saat Ini</label>
+                        <div className="relative">
+                            <input
+                                type="number"
+                                placeholder="0"
+                                className="w-full px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-800 font-bold"
+                                value={formData.currentStock}
+                                onFocus={(e) => e.target.select()}
+                                onChange={(e) => setFormData({ ...formData, currentStock: e.target.value })}
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-[13px] font-medium">
+                                {formData.unit}
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1.5 ml-1">Ubah jumlah ini jika ada koreksi stok manual.</p>
                     </div>
                 </div>
 

@@ -289,7 +289,16 @@ export default function NewProductionPage() {
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <p className="font-black text-[15px] text-slate-800 leading-tight">{ing.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{ing.brand} · Stok: {ing.currentStock} {ing.unit}</p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                                        {ing.brand} · Stok: {ing.currentStock} {ing.unit}
+                                                    </p>
+                                                    {ing.currentStock === 0 && (
+                                                        <span className="flex items-center gap-0.5 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest animate-pulse">
+                                                            ⚠ STOK HABIS
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <button onClick={() => removeIngredientFromBatch(ingId)} className="text-slate-200 hover:text-red-400 p-1 transition-colors">
                                                 <X className="w-5 h-5" />
@@ -341,12 +350,32 @@ export default function NewProductionPage() {
                             </div>
                         )}
 
-                        <div className="flex gap-3 pt-4">
+                        {/* Out of Stock Warning */}
+                        {Object.entries(usage).some(([ingIdStr]) => {
+                            const ing = (ingredients || []).find(i => i.id === Number(ingIdStr));
+                            return ing && ing.currentStock === 0;
+                        }) && (
+                            <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
+                                <span className="text-xl leading-none">⚠️</span>
+                                <div>
+                                    <p className="text-[12px] font-black text-red-700 leading-tight">Ada bahan dengan stok habis!</p>
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">Tambahkan stok dulu sebelum lanjut produksi, atau hapus bahan tersebut dari daftar.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
                             <button onClick={() => setStep(1)} className="p-4 bg-slate-100 rounded-2xl text-slate-600 active:scale-95 transition-transform flex items-center justify-center">
                                 <ChevronLeft className="w-6 h-6" />
                             </button>
-                            <button onClick={() => setStep(3)} disabled={Object.keys(usage).length === 0}
-                                className="flex-1 bg-sky-500 text-white rounded-2xl font-black text-[15px] flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 disabled:opacity-50 active:scale-95 transition-transform">
+                            <button
+                                onClick={() => setStep(3)}
+                                disabled={Object.keys(usage).length === 0 || Object.entries(usage).some(([ingIdStr]) => {
+                                    const ing = (ingredients || []).find(i => i.id === Number(ingIdStr));
+                                    return ing && ing.currentStock === 0;
+                                })}
+                                className="flex-1 bg-sky-500 text-white rounded-2xl font-black text-[15px] flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 disabled:opacity-50 active:scale-95 transition-transform"
+                            >
                                 INPUT HASIL PCS <ArrowRight className="w-5 h-5" />
                             </button>
                         </div>
